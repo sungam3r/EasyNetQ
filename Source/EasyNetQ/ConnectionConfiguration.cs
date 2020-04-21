@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using RabbitMQ.Client;
 
 namespace EasyNetQ
@@ -74,13 +76,8 @@ namespace EasyNetQ
 
         private void SetDefaultClientProperties(IDictionary<string, object> clientProperties)
         {
-            string applicationNameAndPath = null;
-#if !NETFX
-            var version = GetType().GetTypeInfo().Assembly.GetName().Version.ToString();
-#else
-            var version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-#endif
-            applicationNameAndPath = Environment.GetCommandLineArgs()[0];
+            var version = typeof(ConnectionConfiguration).Assembly.GetName().Version.ToString();
+            var applicationNameAndPath = Environment.GetCommandLineArgs()[0];
 
             var applicationName = "unknown";
             var applicationPath = "unknown";
@@ -99,23 +96,15 @@ namespace EasyNetQ
                 {
                 }
 
-            var hostname = Environment.MachineName;
-
-            var netVersion = Environment.Version.ToString();
-            var product = Product ?? applicationName;
-            var platform = Platform ?? hostname;
-            var name = Name ?? applicationName;
-
             AddValueIfNotExists(clientProperties, "client_api", "EasyNetQ");
-            AddValueIfNotExists(clientProperties, "product", product);
-            AddValueIfNotExists(clientProperties, "platform", platform);
-            AddValueIfNotExists(clientProperties, "net_version", netVersion);
+            AddValueIfNotExists(clientProperties, "product", Product ?? applicationName);
+            AddValueIfNotExists(clientProperties, "platform", Platform ?? GetPlatform());
             AddValueIfNotExists(clientProperties, "version", version);
-            AddValueIfNotExists(clientProperties, "connection_name", name);
+            AddValueIfNotExists(clientProperties, "connection_name", Name ?? applicationName);
             AddValueIfNotExists(clientProperties, "easynetq_version", version);
             AddValueIfNotExists(clientProperties, "application", applicationName);
             AddValueIfNotExists(clientProperties, "application_location", applicationPath);
-            AddValueIfNotExists(clientProperties, "machine_name", hostname);
+            AddValueIfNotExists(clientProperties, "machine_name", Environment.MachineName);
             AddValueIfNotExists(clientProperties, "user", UserName);
             AddValueIfNotExists(clientProperties, "connected", DateTime.UtcNow.ToString("u")); // UniversalSortableDateTimePattern: yyyy'-'MM'-'dd HH':'mm':'ss'Z'
             AddValueIfNotExists(clientProperties, "requested_heartbeat", RequestedHeartbeat.ToString());
@@ -155,6 +144,22 @@ namespace EasyNetQ
                     hostConfiguration.Port = Port;
 
             SetDefaultClientProperties(ClientProperties);
+        }
+
+        private static string GetPlatform()
+        {
+#if NETSTANDARD2_0
+            string platform = RuntimeInformation.FrameworkDescription;
+#else
+            string platform = Environment.Version.ToString();
+#endif
+
+            string frameworkName = Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
+            if (frameworkName != null)
+                platform = platform + " [" + frameworkName + "]";
+
+            // example: .NET Core 4.6.27317.07 [.NETCoreApp,Version=v2.0]
+            return platform;
         }
     }
 
