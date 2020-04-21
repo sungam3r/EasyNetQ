@@ -42,41 +42,79 @@ namespace EasyNetQ
             ClientProperties = new Dictionary<string, object>();
         }
 
+        /// <summary>
+        /// Dictionary of client properties to be sent to the server.
+        /// You can browse these properties when selecting connection in RabbitMQ Management Plugin.
+        /// All properties with <c>null</c> values will be displayed as 'undefined'.
+        /// </summary>
+        public IDictionary<string, object> ClientProperties { get; }
+
         public ushort Port { get; set; }
+
         public string VirtualHost { get; set; }
+
+        /// <summary>
+        /// This property will be written to <see cref="ClientProperties"/> if it is not there yet.
+        /// </summary>
         public string UserName { get; set; }
+
         public string Password { get; set; }
 
         /// <summary>
-        ///     Heartbeat interval seconds. (default is 10)
+        /// Heartbeat interval seconds. (default is 10)
+        /// This property will be written to <see cref="ClientProperties"/> if it is not there yet.
         /// </summary>
         public ushort RequestedHeartbeat { get; set; }
 
         public ushort PrefetchCount { get; set; }
+
         public Uri AmqpConnectionString { get; set; }
-        public IDictionary<string, object> ClientProperties { get; }
 
         public IEnumerable<HostConfiguration> Hosts { get; set; }
+
         public SslOption Ssl { get; }
 
         /// <summary>
-        ///     Operation timeout seconds. (default is 10)
+        /// Operation timeout seconds. (default is 10)
+        /// This property will be written to <see cref="ClientProperties"/> if it is not there yet.
         /// </summary>
         public ushort Timeout { get; set; }
 
+        /// <summary>
+        /// This property will be written to <see cref="ClientProperties"/> if it is not there yet.
+        /// </summary>
         public bool PublisherConfirms { get; set; }
+
+        /// <summary>
+        /// This property will be written to <see cref="ClientProperties"/> if it is not there yet.
+        /// </summary>
         public bool PersistentMessages { get; set; }
+
+        /// <summary>
+        /// This property will be written to <see cref="ClientProperties"/> if it is not there yet.
+        /// </summary>
         public string Product { get; set; }
+
+        /// <summary>
+        /// This property will be written to <see cref="ClientProperties"/> if it is not there yet.
+        /// </summary>
         public string Platform { get; set; }
+
+        /// <summary>
+        /// This property will be written to <see cref="ClientProperties"/> if it is not there yet.
+        /// </summary>
         public string Name { get; set; }
+
         public bool UseBackgroundThreads { get; set; }
+
         public IList<IAuthMechanismFactory> AuthMechanisms { get; set; }
+
         public TimeSpan ConnectIntervalAttempt { get; set; }
+
         public int DispatcherQueueSize { get; set; }
 
         private void SetDefaultClientProperties(IDictionary<string, object> clientProperties)
         {
-            var version = typeof(ConnectionConfiguration).Assembly.GetName().Version.ToString();
             var applicationNameAndPath = Environment.GetCommandLineArgs()[0];
 
             var applicationName = "unknown";
@@ -99,9 +137,9 @@ namespace EasyNetQ
             AddValueIfNotExists(clientProperties, "client_api", "EasyNetQ");
             AddValueIfNotExists(clientProperties, "product", Product ?? applicationName);
             AddValueIfNotExists(clientProperties, "platform", Platform ?? GetPlatform());
-            AddValueIfNotExists(clientProperties, "version", version);
+            AddValueIfNotExists(clientProperties, "version", GetApplicationVersion());
             AddValueIfNotExists(clientProperties, "connection_name", Name ?? applicationName);
-            AddValueIfNotExists(clientProperties, "easynetq_version", version);
+            AddValueIfNotExists(clientProperties, "easynetq_version", typeof(ConnectionConfiguration).Assembly.GetName().Version.ToString());
             AddValueIfNotExists(clientProperties, "application", applicationName);
             AddValueIfNotExists(clientProperties, "application_location", applicationPath);
             AddValueIfNotExists(clientProperties, "machine_name", Environment.MachineName);
@@ -115,6 +153,7 @@ namespace EasyNetQ
 
         private static void AddValueIfNotExists(IDictionary<string, object> clientProperties, string name, string value)
         {
+            // allow set nulls, null values will be displayed as 'undefined'
             if (!clientProperties.ContainsKey(name))
                 clientProperties.Add(name, value);
         }
@@ -144,6 +183,18 @@ namespace EasyNetQ
                     hostConfiguration.Port = Port;
 
             SetDefaultClientProperties(ClientProperties);
+        }
+
+        private static string GetApplicationVersion()
+        {
+            try
+            {
+                return Assembly.GetEntryAssembly()?.GetName().Version.ToString();
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private static string GetPlatform()
