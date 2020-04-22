@@ -137,6 +137,7 @@ namespace EasyNetQ
             AddValueIfNotExists(clientProperties, "client_api", "EasyNetQ");
             AddValueIfNotExists(clientProperties, "product", Product ?? applicationName);
             AddValueIfNotExists(clientProperties, "platform", Platform ?? GetPlatform());
+            AddValueIfNotExists(clientProperties, "os", Environment.OSVersion.ToString());
             AddValueIfNotExists(clientProperties, "version", GetApplicationVersion());
             AddValueIfNotExists(clientProperties, "connection_name", Name ?? applicationName);
             AddValueIfNotExists(clientProperties, "easynetq_version", typeof(ConnectionConfiguration).Assembly.GetName().Version.ToString());
